@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinker.lookworld.dao.PermissionDao">
+    <cache type="org.mybatis.caches.redis.RedisCache" >
+        <property name="timeout" value="3600"/>
+    </cache>
+    <sql id="getAll">
+        select id,name,url,type,description from permission
+    </sql>
+
+
+    <select id="getPermsByRoleId" resultType="Permission" useCache="true">
+        select id,name,url,type,description from permission where id in (
+            select permission_id from role_permission where role_id = #{id} and active = 1
+        )
+    </select>
+
+
+    <select id="getPermList" resultType="Permission" useCache="true">
+        <include refid="getAll"/>
+    </select>
+
+    <insert id="addPerm" flushCache="true">
+        insert into permission(name,url,type,description)
+        values (#{name},#{url},#{type},#{description})
+    </insert>
+
+    <update id="updatePermById" flushCache="true">
+        update permission
+        set name=#{name},
+            url=#{url},
+            type=#{type},
+            description=#{description}
+        where id = #{id}
+    </update>
+
+    <delete id="deletePermByIds"  flushCache="true">
+        delete from permission where id in
+        <foreach collection="ids" open="(" separator="," close=")" item="id">#{id}</foreach>
+    </delete>
+
+
+</mapper>

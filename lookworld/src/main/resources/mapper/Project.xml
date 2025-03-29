@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinker.lookworld.dao.ProjectDao">
+
+
+    <sql id="getAll">
+        select id,title,description,guide_id,price,start_time,end_time,duration,location,book_count,count,public_project,state,created_at,updated_at
+        from projects
+    </sql>
+
+    <resultMap id="getAllPro" type="Project">
+        <result column="guide_id" property="guideId"/>
+        <association column="guide_id" property="guide" select="com.sinker.lookworld.dao.GuideDao.getById"/>
+    </resultMap>
+
+
+    <select id="getLists" resultMap="getAllPro">
+        <include refid="getAll"/>
+        <where>
+            <if test="id!=null">
+                and id = #{id}
+            </if>
+            <if test="title!=null and title!=''">
+                <bind name="titleLike" value="title+'%'"/>
+                and title like #{titleLike}
+            </if>
+            <if test="publicProject!=null">
+                and public_project=#{publicProject}
+            </if>
+            and admin_view=1
+        </where>
+        order by start_time DESC
+    </select>
+
+    <select id="getBookList" resultMap="getAllPro">
+        <include refid="getAll"/>
+        where id = #{id}
+        order by start_time DESC
+    </select>
+
+    <insert id="addProject" >
+        insert into projects(title,description,guide_id,price,start_time,end_time,duration,location,book_count,count,public_project,state,admin_view,created_at)
+        values (#{title},#{description},#{guideId},#{price},#{startTime},#{endTime},#{duration},#{location},#{count},#{count},0,0,1,#{createdAt})
+    </insert>
+
+    <delete id="deleteByIds" >
+        update projects set admin_view=0 where id in
+        <foreach collection="ids" open="(" separator="," close=")" item="id">#{id}</foreach>
+    </delete>
+
+    <update id="editProject">
+        update projects
+        set title=#{title},
+            description=#{description},
+            guide_id =#{guideId},
+            price=#{price},
+            start_time=#{startTime},
+            end_time=#{endTime},
+            duration=#{duration},
+            location=#{location},
+            count=#{count},
+            book_count=#{bookCount},
+            updated_at = #{updatedAt}
+        where id = #{id};
+    </update>
+
+    <insert id="addBooking" >
+        insert into bookings(user_id,guide_id,project_id,status,user_view,admin_view,created_at,updated_at)
+        values (#{userId},#{guideId},#{projectId},#{status},1,1,#{createdAt},#{updatedAt})
+    </insert>
+
+
+</mapper>

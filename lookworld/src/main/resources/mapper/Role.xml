@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinker.lookworld.dao.RoleDao">
+    <cache type="org.mybatis.caches.redis.RedisCache" readOnly="true" >
+        <property name="timeout" value="3600"/>
+    </cache>
+
+    <select id="getRolesByUserId" resultType="Role">
+        select id,name from role where id in (
+            select role_id from user_role where user_id = #{id} and active = 1
+            )
+    </select>
+
+
+    <select id="getAllPerm" resultType="Permission">
+        select id,name,url,type,description from permission
+    </select>
+
+    <select id="getPermsByRoleIds" resultType="Permission">
+        select id,name,url,type,description from permission where id in (
+            select permission_id from role_permission where active = 1 and role_id in
+            <foreach collection="roleIds" open="(" separator="," close=")" item="id">#{id}</foreach>
+        )
+    </select>
+
+    <resultMap id="getRoleAndPerm" type="Role">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <association column="id" property="permissions" fetchType="eager" select="getPermsByRoleId"/>
+    </resultMap>
+
+    <select id="getPermsByRoleId" resultType="Permission">
+        select id,name,url,type,description from permission where id in (
+            select permission_id from role_permission where role_id = #{id} and active = 1
+        )
+    </select>
+
+    <select id="getRoleList" resultMap="getRoleAndPerm" useCache="true">
+        select id,name from role
+    </select>
+
+    <delete id="deleteRolePermByRoleId" flushCache="true">
+        delete from role_permission where role_id = #{id}
+    </delete>
+
+    <insert id="addRolePerm" flushCache="true">
+        insert into role_permission(role_id,permission_id,active) values
+        <foreach collection="permIds" item="permId" separator=",">
+            (#{id},#{permId},1)
+        </foreach>
+    </insert>
+
+    <insert id="addRole" keyColumn="id" keyProperty="id" useGeneratedKeys="true">
+        insert into role(name) values (#{name})
+    </insert>
+
+
+</mapper>

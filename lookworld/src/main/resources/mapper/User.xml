@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinker.lookworld.dao.UserDao">
+
+    <sql id="getAll">
+        select id,account,password,picture,name,gender,phone,email,created_at,updated_at from users
+    </sql>
+
+    <resultMap id="getUserAndRole" type="User">
+        <result property="id" column="id"/>
+        <association column="id" property="role" select="getRoleByUserId"/>
+    </resultMap>
+    <!--获取用户角色-->
+    <select id="getRoleByUserId" resultType="Role">
+        select id,name from role where id = (
+            select role_id from user_role where user_id = #{id} and active = 1
+        )
+    </select>
+
+    <select id="getUserAll" resultMap="getUserAndRole" >
+        <include refid="getAll"/>
+        <where>
+            <if test="id!=null">
+                and id = #{id}
+            </if>
+            <if test="account!=null and account!=''">
+                <bind name="accountLike" value="account+'%'"/>
+                and account like #{accountLike}
+            </if>
+            <if test="name!=null and name!=''">
+                <bind name="nameLike" value="name+'%'"/>
+                and `name` like #{nameLike}
+            </if>
+            <if test="phone!=null and phone!=''">
+                <bind name="phoneLike" value="phone+'%'"/>
+                and phone like #{phoneLike}
+            </if>
+            <if test="isAdmin!=null">
+                and is_admin=#{isAdmin}
+            </if>
+        </where>
+    </select>
+
+    <delete id="deleteByIds" >
+        delete from users where id in
+        <foreach collection="ids" open="(" separator="," close=")" item="id">#{id}</foreach>
+    </delete>
+
+    <insert id="addUser" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into users(account,password,picture,name,gender,phone,email,is_admin,created_at,updated_at)
+        values (#{account},#{password},#{picture},#{name},#{gender},#{phone},#{email},#{isAdmin},#{createdAt},#{updatedAt})
+    </insert>
+
+    <insert id="registerUser" keyColumn="id" keyProperty="id">
+        insert into users(account,password,picture,name,gender,phone,email,is_admin,created_at,updated_at)
+        values (#{account},#{password},#{picture},#{name},#{gender},#{phone},#{email},0,#{createdAt},#{updatedAt})
+    </insert>
+
+    <update id="updateUser" >
+        update users
+        set account = #{account},
+            password=#{password},
+            picture=#{picture},
+            name = #{name},
+            gender= #{gender},
+            phone=#{phone},
+            email = #{email},
+            updated_at=#{updatedAt}
+        where id = #{id}
+    </update>
+
+    <select id="getUserByAccount" resultMap="getUserAndRole">
+        <include refid="getAll"></include>
+        where account=#{account}
+    </select>
+
+    <update id="updatePW" >
+        update users
+        set password=#{password1}
+        where account = #{account}
+    </update>
+
+</mapper>

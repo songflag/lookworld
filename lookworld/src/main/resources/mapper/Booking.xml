@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinker.lookworld.dao.BookingDao">
+
+    <resultMap id="includeProject" type="BookProject">
+        <result column="project_id" property="projectId"/>
+        <association column="project_id"  property="project" select="com.sinker.lookworld.dao.ProjectDao.getBookList" />
+    </resultMap>
+
+    <select id="getMyBooks" resultMap="includeProject">
+        select id,project_id,status from bookings
+        where user_id = #{userId}
+        <if test="status!=null and status!=''">and status = #{status}</if>
+        order by created_at DESC
+    </select>
+
+
+    <select id="getUserList" resultType="User">
+        select name,gender,phone,email from users
+        where id in
+        <foreach collection="ids" open="(" separator="," close=")" item="id">#{id}</foreach>
+    </select>
+
+
+    <update id="cancelBook">
+        update bookings
+        set status = #{status}
+        where user_id=#{userId} and project_id=#{projectId}
+    </update>
+
+    <select id="isHaveUser" resultType="int">
+        select count(0) from bookings
+        where project_id in <foreach collection="ids" open="(" separator="," close=")" item="id">#{id}</foreach>
+        and status = #{status}
+    </select>
+
+</mapper>
